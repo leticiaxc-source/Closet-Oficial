@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEI Gestor — Controle Financeiro</title>
+<style>
+:root{
+  --bg:#f5f7fb; --card:#fff; --text:#172033; --muted:#6b7280;
+  --primary:#2563eb; --primary-dark:#1d4ed8; --green:#16a34a;
+  --red:#dc2626; --orange:#ea580c; --border:#e5e7eb;
+  --shadow:0 8px 24px rgba(15,23,42,.07); --radius:16px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{min-height:100vh;display:flex}
+.sidebar{width:245px;background:#111827;color:#fff;padding:20px 14px;position:fixed;inset:0 auto 0 0;z-index:20}
+.brand{display:flex;gap:10px;align-items:center;padding:8px 10px 24px;font-weight:800;font-size:20px}
+.brand-icon{width:38px;height:38px;border-radius:12px;background:#2563eb;display:grid;place-items:center}
+.nav{display:grid;gap:5px}
+.nav button{border:0;background:transparent;color:#cbd5e1;text-align:left;padding:11px 12px;border-radius:10px;display:flex;gap:10px;align-items:center}
+.nav button:hover,.nav button.active{background:#1f2937;color:#fff}
+.main{margin-left:245px;width:calc(100% - 245px);padding:24px;max-width:1500px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:22px}
+.topbar h1{margin:0;font-size:25px}
+.topbar p{margin:5px 0 0;color:var(--muted)}
+.mobile-menu{display:none}
+.page{display:none}.page.active{display:block}
+.grid{display:grid;gap:16px}
+.cards{grid-template-columns:repeat(6,minmax(0,1fr));margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+.kpi{min-height:125px}
+.kpi .label{font-size:13px;color:var(--muted);font-weight:600}
+.kpi .value{font-size:25px;font-weight:800;margin-top:14px}
+.kpi .sub{font-size:12px;color:var(--muted);margin-top:6px}
+.kpi.receita .value{color:var(--green)} .kpi.despesa .value{color:var(--red)}
+.kpi.saldo.positive .value{color:var(--green)} .kpi.saldo.negative .value{color:var(--red)} .kpi.saldo.zero .value{color:#64748b}
+.two{grid-template-columns:1.25fr 1fr}.three{grid-template-columns:repeat(3,1fr)}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px}
+.section-title h2{font-size:18px;margin:0}.section-title span{font-size:12px;color:var(--muted)}
+.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:700;display:inline-flex;align-items:center;gap:7px}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
+.btn-light{background:#eef2ff;color:#1e40af}.btn-danger{background:#fee2e2;color:#991b1b}.btn-ghost{background:#f8fafc;color:#334155;border:1px solid var(--border)}
+.btn-success{background:#dcfce7;color:#166534}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.field{display:grid;gap:6px}.field.full{grid-column:1/-1}
+.field label{font-size:13px;font-weight:700}.field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#93c5fd;box-shadow:0 0 0 3px #dbeafe}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:700px}
+th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--border);font-size:13px}
+th{color:var(--muted);font-size:12px;background:#f8fafc}
+.badge{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800}
+.badge.green{background:#dcfce7;color:#166534}.badge.red{background:#fee2e2;color:#991b1b}.badge.orange{background:#ffedd5;color:#9a3412}.badge.gray{background:#f1f5f9;color:#475569}.badge.blue{background:#dbeafe;color:#1d4ed8}
+.empty{text-align:center;padding:35px;color:var(--muted)}
+.bar-chart{display:grid;gap:13px}.bar-row{display:grid;grid-template-columns:130px 1fr 90px;gap:10px;align-items:center;font-size:12px}.bar{height:10px;background:#e5e7eb;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--primary);border-radius:99px}
+.donut{width:170px;height:170px;border-radius:50%;margin:auto;display:grid;place-items:center;background:conic-gradient(#2563eb 0 45%,#16a34a 45% 70%,#ea580c 70% 88%,#94a3b8 88% 100%);position:relative}.donut:after{content:"Despesas";position:absolute;width:105px;height:105px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:12px;font-weight:800}
+.legend{display:grid;gap:8px;margin-top:14px}.legend div{display:flex;justify-content:space-between;font-size:12px}
+.filters{display:grid;grid-template-columns:1.5fr repeat(4,1fr);gap:10px;margin-bottom:14px}
+.note{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:12px;padding:12px;font-size:13px}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center;padding:18px;z-index:50}.modal.show{display:flex}
+.modal-box{width:min(680px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.2)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.modal-head h3{margin:0}.close{border:0;background:#f1f5f9;border-radius:8px;width:35px;height:35px}
+.toast{position:fixed;right:18px;bottom:18px;background:#111827;color:#fff;padding:12px 15px;border-radius:10px;opacity:0;transform:translateY(10px);transition:.2s;z-index:100;font-size:13px}.toast.show{opacity:1;transform:none}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:1200px){.cards{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.sidebar{transform:translateX(-100%);transition:.2s}.sidebar.open{transform:none}.main{margin-left:0;width:100%;padding:16px}.mobile-menu{display:inline-flex}.topbar{align-items:flex-start}.two,.three,.settings-grid{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.cards{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.topbar h1{font-size:20px}.cards .kpi{min-height:110px}.kpi .value{font-size:20px}.filters{grid-template-columns:1fr}.actions .btn{flex:1;justify-content:center}}
+@media(max-width:430px){.cards{grid-template-columns:1fr}.card{padding:14px}.main{padding:12px}}
+</style>
+</head>
+<body>
+<!--
+============================================================
+MVP — CONTROLE FINANCEIRO PARA MEI
+Projeto acadêmico — Processos Gerenciais / Gestão e TI
+
+REQUISITOS PRINCIPAIS IMPLEMENTADOS:
+1. Layout Mobile-First, adaptável a smartphones de até 430px.
+2. Dashboard com Receitas, Despesas e Saldo Líquido.
+3. Saldo com indicação visual positiva/negativa.
+4. Cadastro de descrição, valor, categoria e data.
+5. Valores positivos = Receita; valores negativos = Despesa.
+6. Categorias:
+   - Serviços Prestados
+   - Venda de Mercadorias
+   - Fornecedores
+   - Impostos/DAS
+   - Outros
+7. Histórico ordenado por data.
+8. Exclusão de lançamentos.
+9. Persistência com localStorage.
+10. Exportação para CSV compatível com Excel.
+11. HTML + CSS + JavaScript em um único arquivo.
+12. Sem frameworks ou dependências externas.
+
+OBSERVAÇÃO:
+Este é um MVP acadêmico. Os dados ficam armazenados localmente
+no navegador e não são enviados para um servidor.
+============================================================
+-->
+
+<div class="app">
+<aside class="sidebar" id="sidebar">
+  <div class="brand"><div class="brand-icon">₿</div><span>MEI Gestor</span></div>
+  <nav class="nav">
+    <button class="active" data-page="dashboard">📊 Dashboard</button>
+    <button data-page="lancamentos">💳 Lançamentos</button>
+    <button data-page="pagar">📤 Contas a Pagar</button>
+    <button data-page="receber">📥 Contas a Receber</button>
+    <button data-page="clientes">👥 Clientes</button>
+    <button data-page="fornecedores">🏢 Fornecedores</button>
+    <button data-page="relatorios">📈 Relatórios</button>
+    <button data-page="config">⚙️ Configurações</button>
+  </nav>
+</aside>
+
+<main class="main">
+<header class="topbar">
+  <div style="display:flex;gap:12px;align-items:flex-start">
+    <button class="btn btn-ghost mobile-menu" id="menuBtn">☰</button>
+    <div><h1 id="pageTitle">Dashboard</h1><p id="businessSubtitle">Visão geral do seu negócio</p></div>
+  </div>
+  <button class="btn btn-primary" id="quickAdd">＋ Novo lançamento</button>
+</header>
+
+<!-- DASHBOARD -->
+<section class="page active" id="page-dashboard">
+  <div class="grid cards">
+    <div class="card kpi receita"><div class="label">RECEITAS</div><div class="value" id="kpiReceitas">R$ 0,00</div><div class="sub">Total recebido</div></div>
+    <div class="card kpi despesa"><div class="label">DESPESAS</div><div class="value" id="kpiDespesas">R$ 0,00</div><div class="sub">Total gasto</div></div>
+    <div class="card kpi saldo zero" id="saldoCard"><div class="label">SALDO</div><div class="value" id="kpiSaldo">R$ 0,00</div><div class="sub">Receitas - despesas</div></div>
+    <div class="card kpi"><div class="label">FATURAMENTO DO MÊS</div><div class="value" id="kpiMes">R$ 0,00</div><div class="sub">Movimentação do mês</div></div>
+    <div class="card kpi"><div class="label">CONTAS A PAGAR</div><div class="value" id="kpiPagar">0</div><div class="sub" id="kpiPagarValor">R$ 0,00 pendente</div></div>
+    <div class="card kpi"><div class="label">CONTAS A RECEBER</div><div class="value" id="kpiReceber">0</div><div class="sub" id="kpiReceberValor">R$ 0,00 pendente</div></div>
+  </div>
+  <div class="grid two">
+    <div class="card">
+      <div class="section-title"><h2>Visão financeira</h2><span>Resumo atual</span></div>
+      <div class="bar-chart" id="financeBars"></div>
+    </div>
+    <div class="card">
+      <div class="section-title"><h2>Despesas por categoria</h2><span>Distribuição</span></div>
+      <div id="expenseDonut" class="donut"></div>
+      <div class="legend" id="expenseLegend"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="section-title"><h2>Últimos lançamentos</h2><button class="btn btn-light" data-page-link="lancamentos">Ver todos</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor</th></tr></thead><tbody id="recentTable"></tbody></table></div>
+  </div>
+</section>
+
+<!-- LANÇAMENTOS -->
+<section class="page" id="page-lancamentos">
+  <div class="card">
+    <div class="section-title"><h2>Histórico financeiro</h2><button class="btn btn-primary" id="newLancamento">＋ Novo lançamento</button></div>
+    <div class="filters">
+      <input id="searchLanc" placeholder="🔎 Pesquisar descrição">
+      <select id="filterTipo"><option value="">Todos os tipos</option><option value="Receita">Receitas</option><option value="Despesa">Despesas</option></select>
+      <select id="filterCategoria"><option value="">Todas as categorias</option></select>
+      <select id="filterStatus"><option value="">Todos os status</option><option>Pago/Recebido</option><option>Pendente</option></select>
+      <input id="filterData" type="month">
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Ação</th></tr></thead><tbody id="lancTable"></tbody></table></div>
+  </div>
+</section>
+
+<!-- PAGAR -->
+<section class="page" id="page-pagar">
+  <div class="card">
+    <div class="section-title"><h2>Contas a pagar</h2><button class="btn btn-primary" id="newPagar">＋ Nova conta</button></div>
+    <div class="note">Contas vencidas são identificadas automaticamente pela data de vencimento.</div>
+    <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Vencimento</th><th>Descrição</th><th>Fornecedor</th><th>Categoria</th><th>Valor</th><th>Status</th><th>Ação</th></tr></thead><tbody id="pagarTable"></tbody></table></div>
+  </div>
+</section>
+
+<!-- RECEBER -->
+<section class="page" id="page-receber">
+  <div class="card">
+    <div class="section-title"><h2>Contas a receber</h2><button class="btn btn-primary" id="newReceber">＋ Nova conta</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Vencimento</th><th>Cliente</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Ação</th></tr></thead><tbody id="receberTable"></tbody></table></div>
+  </div>
+</section>
+
+<!-- CLIENTES -->
+<section class="page" id="page-clientes">
+  <div class="card">
+    <div class="section-title"><h2>Clientes</h2><button class="btn btn-primary" id="newCliente">＋ Novo cliente</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Observação</th><th>Ação</th></tr></thead><tbody id="clienteTable"></tbody></table></div>
+  </div>
+</section>
+
+<!-- FORNECEDORES -->
+<section class="page" id="page-fornecedores">
+  <div class="card">
+    <div class="section-title"><h2>Fornecedores</h2><button class="btn btn-primary" id="newFornecedor">＋ Novo fornecedor</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Categoria</th><th>Ação</th></tr></thead><tbody id="fornecedorTable"></tbody></table></div>
+  </div>
+</section>
+
+<!-- RELATÓRIOS -->
+<section class="page" id="page-relatorios">
+  <div class="grid two">
+    <div class="card">
+      <div class="section-title"><h2>Relatório financeiro</h2><span>Resumo</span></div>
+      <div class="form-grid">
+        <div class="field"><label>Data inicial</label><input id="relInicio" type="date"></div>
+        <div class="field"><label>Data final</label><input id="relFim" type="date"></div>
+      </div>
+      <div id="reportSummary" style="margin-top:16px"></div>
+      <button class="btn btn-primary" id="exportCsv" style="margin-top:14px">⬇ Exportar relatório CSV</button>
+    </div>
+    <div class="card">
+      <div class="section-title"><h2>Resumo por categoria</h2><span>Despesas</span></div>
+      <div id="categoryReport"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="section-title"><h2>Movimentações</h2><span>Resultado do período</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Status</th><th>Valor</th></tr></thead><tbody id="reportTable"></tbody></table></div>
+  </div>
+</section>
+
+<!-- CONFIG -->
+<section class="page" id="page-config">
+  <div class="grid settings-grid">
+    <div class="card">
+      <div class="section-title"><h2>Dados do negócio</h2></div>
+      <div class="form-grid">
+        <div class="field full"><label>Nome do negócio</label><input id="cfgNegocio" placeholder="Minha Empresa MEI"></div>
+        <div class="field full"><label>Responsável</label><input id="cfgResponsavel" placeholder="Nome do responsável"></div>
+        <div class="field"><label>Moeda</label><select disabled><option>R$ — Real brasileiro</option></select></div>
+      </div>
+      <button class="btn btn-primary" id="saveConfig" style="margin-top:14px">Salvar configurações</button>
+    </div>
+    <div class="card">
+      <div class="section-title"><h2>Backup e dados</h2></div>
+      <p style="color:var(--muted);font-size:13px">Faça backup dos seus dados ou restaure uma cópia anterior.</p>
+      <div class="actions">
+        <button class="btn btn-light" id="exportBackup">⬇ Exportar backup JSON</button>
+        <label class="btn btn-ghost">⬆ Importar backup<input id="importBackup" type="file" accept=".json" hidden></label>
+        <button class="btn btn-danger" id="clearData">🗑 Limpar todos os dados</button>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+</div>
+
+<!-- MODAL LANÇAMENTO -->
+<div class="modal" id="modalLanc">
+<div class="modal-box">
+  <div class="modal-head"><h3 id="modalLancTitle">Novo lançamento</h3><button class="close" data-close="modalLanc">×</button></div>
+  <form id="formLanc">
+    <input type="hidden" id="lancId">
+    <div class="form-grid">
+      <div class="field"><label>Tipo *</label><select id="lancTipo" required><option value="Receita">Receita</option><option value="Despesa">Despesa</option></select></div>
+      <div class="field"><label>Valor *</label><input id="lancValor" type="number" min="0.01" step="0.01" required placeholder="0,00"></div>
+      <div class="field full"><label>Descrição *</label><input id="lancDescricao" required placeholder="Ex.: Venda de serviço"></div>
+      <div class="field"><label>Categoria *</label><select id="lancCategoria" required></select></div>
+      <div class="field"><label>Data *</label><input id="lancData" type="date" required></div>
+      <div class="field"><label>Status *</label><select id="lancStatus"><option>Pago/Recebido</option><option>Pendente</option></select></div>
+      <div class="field"><label>Cliente / Fornecedor</label><select id="lancPessoa"><option value="">Não vincular</option></select></div>
+    </div>
+    <div class="actions" style="margin-top:18px"><button type="submit" class="btn btn-primary">Salvar lançamento</button><button type="button" class="btn btn-ghost" data-close="modalLanc">Cancelar</button></div>
+  </form>
+</div>
+</div>
+
+<!-- MODAL GENÉRICO -->
+<div class="modal" id="modalGeneric"><div class="modal-box"><div class="modal-head"><h3 id="genericTitle"></h3><button class="close" data-close="modalGeneric">×</button></div><div id="genericBody"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   DADOS E CONFIGURAÇÕES
+========================================================= */
+const STORAGE_KEY='mei_gestor_v1';
+const defaultData={
+  lancamentos:[], clientes:[], fornecedores:[], categorias:[
+    'Serviços Prestados','Venda de Mercadorias','Fornecedores','Impostos/DAS',
+    'Salários/Pró-labore','Marketing','Transporte','Outros'
+  ],
+  config:{negocio:'MEI Gestor',responsavel:''},
+  pagar:[], receber:[]
+};
+let db=loadDB();
+
+function loadDB(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return saved ? {...defaultData,...saved} : structuredClone(defaultData);
+  }catch(e){return structuredClone(defaultData)}
+}
+function saveDB(){localStorage.setItem(STORAGE_KEY,JSON.stringify(db))}
+function uid(prefix='id'){return prefix+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7)}
+function today(){return new Date().toISOString().slice(0,10)}
+function money(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+function dateBR(v){if(!v)return '-'; const [y,m,d]=v.split('-'); return `${d}/${m}/${y}`}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400)}
+function openModal(id){document.getElementById(id).classList.add('show')}
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+
+/* =========================================================
+   NAVEGAÇÃO
+========================================================= */
+const titles={
+ dashboard:['Dashboard','Visão geral do seu negócio'],
+ lancamentos:['Lançamentos','Receitas e despesas'],
+ pagar:['Contas a Pagar','Despesas e compromissos'],
+ receber:['Contas a Receber','Valores que você tem a receber'],
+ clientes:['Clientes','Cadastro e histórico de clientes'],
+ fornecedores:['Fornecedores','Cadastro e histórico de fornecedores'],
+ relatorios:['Relatórios','Informações para decisão gerencial'],
+ config:['Configurações','Dados do negócio e backup']
+};
+function showPage(page){
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+ document.getElementById('page-'+page).classList.add('active');
+ document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+ document.getElementById('pageTitle').textContent=titles[page][0];
+ document.getElementById('businessSubtitle').textContent=titles[page][1];
+ document.getElementById('sidebar').classList.remove('open');
+ renderAll();
+}
+document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
+document.querySelectorAll('[data-page-link]').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.pageLink)));
+document.getElementById('menuBtn').onclick=()=>document.getElementById('sidebar').classList.toggle('open');
+document.getElementById('quickAdd').onclick=()=>openLancModal();
+document.getElementById('newLancamento').onclick=()=>openLancModal();
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+function totals(){
+ const receitas=db.lancamentos.filter(x=>x.tipo==='Receita').reduce((s,x)=>s+Number(x.valor),0);
+ const despesas=db.lancamentos.filter(x=>x.tipo==='Despesa').reduce((s,x)=>s+Number(x.valor),0);
+ const saldo=receitas-despesas;
+ return {receitas,despesas,saldo};
+}
+function renderDashboard(){
+ const t=totals();
+ document.getElementById('kpiReceitas').textContent=money(t.receitas);
+ document.getElementById('kpiDespesas').textContent=money(t.despesas);
+ document.getElementById('kpiSaldo').textContent=money(t.saldo);
+ const sc=document.getElementById('saldoCard');sc.classList.remove('positive','negative','zero');sc.classList.add(t.saldo>0?'positive':t.saldo<0?'negative':'zero');
+ const month=new Date().toISOString().slice(0,7);
+ const mes=db.lancamentos.filter(x=>x.data?.slice(0,7)===month).reduce((s,x)=>s+(x.tipo==='Receita'?Number(x.valor):-Number(x.valor)),0);
+ document.getElementById('kpiMes').textContent=money(mes);
+ const pagar=db.pagar.filter(x=>x.status!=='Pago');
+ const receber=db.receber.filter(x=>x.status!=='Recebido');
+ document.getElementById('kpiPagar').textContent=pagar.length;
+ document.getElementById('kpiPagarValor').textContent=money(pagar.reduce((s,x)=>s+Number(x.valor),0))+' pendente';
+ document.getElementById('kpiReceber').textContent=receber.length;
+ document.getElementById('kpiReceberValor').textContent=money(receber.reduce((s,x)=>s+Number(x.valor),0))+' pendente';
+
+ const max=Math.max(t.receitas,t.despesas,1);
+ document.getElementById('financeBars').innerHTML=[
+  ['Receitas',t.receitas,'green'],['Despesas',t.despesas,'red'],['Saldo',Math.abs(t.saldo),t.saldo>=0?'green':'red']
+ ].map(([n,v])=>`<div class="bar-row"><b>${n}</b><div class="bar"><i style="width:${Math.min(100,v/max*100)}%;background:${n==='Despesas'?'#dc2626':'#2563eb'}"></i></div><span>${money(v)}</span></div>`).join('');
+
+ const cats={};db.lancamentos.filter(x=>x.tipo==='Despesa').forEach(x=>cats[x.categoria]=(cats[x.categoria]||0)+Number(x.valor));
+ const list=Object.entries(cats).sort((a,b)=>b[1]-a[1]);const total=list.reduce((s,x)=>s+x[1],0)||1;
+ const palette=['#2563eb','#16a34a','#ea580c','#7c3aed','#64748b','#db2777','#0891b2','#ca8a04'];
+ let acc=0, stops=[];
+ list.forEach(([,v],i)=>{stops.push(`${palette[i%palette.length]} ${acc}% ${acc+v/total*100}%`);acc+=v/total*100});
+ document.getElementById('expenseDonut').style.background=stops.length?`conic-gradient(${stops.join(',')})`:'conic-gradient(#e5e7eb 0 100%)';
+ document.getElementById('expenseLegend').innerHTML=list.length?list.map(([n,v],i)=>`<div><span>● ${esc(n)}</span><b>${money(v)}</b></div>`).join(''):'<div class="empty">Sem despesas cadastradas.</div>';
+
+ const recent=[...db.lancamentos].sort((a,b)=>b.data.localeCompare(a.data)).slice(0,5);
+ document.getElementById('recentTable').innerHTML=recent.length?recent.map(rowLancRecent).join(''):`<tr><td colspan="5" class="empty">Nenhum lançamento cadastrado.</td></tr>`;
+}
+function rowLancRecent(x){
+ return `<tr><td>${dateBR(x.data)}</td><td>${esc(x.descricao)}</td><td>${esc(x.categoria)}</td><td><span class="badge ${x.tipo==='Receita'?'green':'red'}">${x.tipo}</span></td><td>${x.tipo==='Receita'?'+':'-'} ${money(x.valor)}</td></tr>`;
+}
+
+/* =========================================================
+   LANÇAMENTOS
+========================================================= */
+function fillCategories(){
+ const selects=[document.getElementById('lancCategoria'),document.getElementById('filterCategoria')];
+ selects[0].innerHTML='<option value="">Selecione</option>'+db.categorias.map(c=>`<option>${esc(c)}</option>`).join('');
+ selects[1].innerHTML='<option value="">Todas as categorias</option>'+db.categorias.map(c=>`<option>${esc(c)}</option>`).join('');
+}
+function fillPessoa(){
+ const sel=document.getElementById('lancPessoa');
+ sel.innerHTML='<option value="">Não vincular</option>'+
+ db.clientes.map(c=>`<option value="cliente:${c.id}">Cliente: ${esc(c.nome)}</option>`).join('')+
+ db.fornecedores.map(f=>`<option value="fornecedor:${f.id}">Fornecedor: ${esc(f.nome)}</option>`).join('');
+}
+function openLancModal(id=null){
+ fillCategories();fillPessoa();
+ document.getElementById('formLanc').reset();
+ document.getElementById('lancId').value='';
+ document.getElementById('lancData').value=today();
+ document.getElementById('lancStatus').value='Pago/Recebido';
+ document.getElementById('modalLancTitle').textContent=id?'Editar lançamento':'Novo lançamento';
+ if(id){
+   const x=db.lancamentos.find(a=>a.id===id); if(!x)return;
+   ['tipo','valor','descricao','categoria','data','status'].forEach(k=>document.getElementById('lanc'+k.charAt(0).toUpperCase()+k.slice(1)).value=x[k]);
+   document.getElementById('lancId').value=x.id;
+   document.getElementById('lancPessoa').value=x.pessoa||'';
+ }
+ openModal('modalLanc');
+}
+document.getElementById('formLanc').onsubmit=e=>{
+ e.preventDefault();
+ const x={
+  id:document.getElementById('lancId').value||uid('lan'),
+  tipo:document.getElementById('lancTipo').value,
+  valor:Number(document.getElementById('lancValor').value),
+  descricao:document.getElementById('lancDescricao').value.trim(),
+  categoria:document.getElementById('lancCategoria').value,
+  data:document.getElementById('lancData').value,
+  status:document.getElementById('lancStatus').value,
+  pessoa:document.getElementById('lancPessoa').value
+ };
+ if(!x.descricao||!x.valor||x.valor<=0||!x.categoria||!x.data){toast('Preencha todos os campos obrigatórios.');return}
+ const i=db.lancamentos.findIndex(a=>a.id===x.id);
+ if(i>=0)db.lancamentos[i]=x;else db.lancamentos.push(x);
+ saveDB();closeModal('modalLanc');renderAll();toast(i>=0?'Lançamento atualizado!':'Lançamento cadastrado com sucesso!');
+};
+function renderLancamentos(){
+ let list=[...db.lancamentos].sort((a,b)=>b.data.localeCompare(a.data));
+ const q=document.getElementById('searchLanc').value.toLowerCase();
+ const tipo=document.getElementById('filterTipo').value,cat=document.getElementById('filterCategoria').value,status=document.getElementById('filterStatus').value,mes=document.getElementById('filterData').value;
+ list=list.filter(x=>(!q||x.descricao.toLowerCase().includes(q))&&(!tipo||x.tipo===tipo)&&(!cat||x.categoria===cat)&&(!status||x.status===status)&&(!mes||x.data.startsWith(mes)));
+ document.getElementById('lancTable').innerHTML=list.length?list.map(x=>`<tr>
+ <td>${dateBR(x.data)}</td><td>${esc(x.descricao)}</td><td>${esc(x.categoria)}</td>
+ <td><span class="badge ${x.tipo==='Receita'?'green':'red'}">${x.tipo}</span></td>
+ <td><span class="badge ${x.status==='Pendente'?'orange':'green'}">${esc(x.status)}</span></td>
+ <td><b>${x.tipo==='Receita'?'+':'-'} ${money(x.valor)}</b></td>
+ <td><div class="actions"><button class="btn btn-ghost" onclick="openLancModal('${x.id}')">Editar</button><button class="btn btn-danger" onclick="deleteLanc('${x.id}')">Excluir</button></div></td>
+ </tr>`).join(''):`<tr><td colspan="7" class="empty">Nenhum lançamento encontrado.</td></tr>`;
+}
+function deleteLanc(id){if(!confirm('Excluir este lançamento?'))return;db.lancamentos=db.lancamentos.filter(x=>x.id!==id);saveDB();renderAll();toast('Lançamento excluído com sucesso.')}
+['searchLanc','filterTipo','filterCategoria','filterStatus','filterData'].forEach(id=>document.getElementById(id).addEventListener('input',renderLancamentos));
+
+/* =========================================================
+   CLIENTES E FORNECEDORES
+========================================================= */
+function personModal(type,id=null){
+ const isC=type==='cliente', arr=isC?db.clientes:db.fornecedores, old=arr.find(x=>x.id===id);
+ const title=id?(isC?'Editar cliente':'Editar fornecedor'):(isC?'Novo cliente':'Novo fornecedor');
+ const extra=isC?'':`<div class="field"><label>Categoria</label><input id="pCategoria" value="${esc(old?.categoria||'')}"></div>`;
+ document.getElementById('genericTitle').textContent=title;
+ document.getElementById('genericBody').innerHTML=`<form id="personForm"><div class="form-grid">
+ <div class="field full"><label>Nome *</label><input id="pNome" required value="${esc(old?.nome||'')}"></div>
+ <div class="field"><label>Telefone</label><input id="pTel" value="${esc(old?.telefone||'')}"></div>
+ <div class="field"><label>E-mail</label><input id="pEmail" type="email" value="${esc(old?.email||'')}"></div>
+ ${extra}<div class="field full"><label>Observação</label><textarea id="pObs" rows="3">${esc(old?.obs||'')}</textarea></div>
+ </div><div class="actions" style="margin-top:16px"><button class="btn btn-primary">Salvar</button><button type="button" class="btn btn-ghost" data-close="modalGeneric">Cancelar</button></div></form>`;
+ openModal('modalGeneric');
+ document.getElementById('personForm').onsubmit=e=>{
+  e.preventDefault();const obj={id:id||uid(isC?'cli':'for'),nome:document.getElementById('pNome').value.trim(),telefone:document.getElementById('pTel').value,email:document.getElementById('pEmail').value,obs:document.getElementById('pObs').value};
+  if(!isC)obj.categoria=document.getElementById('pCategoria').value;
+  if(!obj.nome)return;
+  if(id){const i=arr.findIndex(x=>x.id===id);arr[i]=obj}else arr.push(obj);
+  saveDB();closeModal('modalGeneric');renderAll();toast(isC?'Cliente salvo!':'Fornecedor salvo!');
+ };
+}
+document.getElementById('newCliente').onclick=()=>personModal('cliente');
+document.getElementById('newFornecedor').onclick=()=>personModal('fornecedor');
+function renderPeople(){
+ document.getElementById('clienteTable').innerHTML=db.clientes.length?db.clientes.map(x=>`<tr><td><b>${esc(x.nome)}</b></td><td>${esc(x.telefone)}</td><td>${esc(x.email)}</td><td>${esc(x.obs||'-')}</td><td><div class="actions"><button class="btn btn-ghost" onclick="personModal('cliente','${x.id}')">Editar</button><button class="btn btn-danger" onclick="deletePerson('cliente','${x.id}')">Excluir</button></div></td></tr>`).join(''):`<tr><td colspan="5" class="empty">Nenhum cliente cadastrado.</td></tr>`;
+ document.getElementById('fornecedorTable').innerHTML=db.fornecedores.length?db.fornecedores.map(x=>`<tr><td><b>${esc(x.nome)}</b></td><td>${esc(x.telefone)}</td><td>${esc(x.email)}</td><td>${esc(x.categoria||'-')}</td><td><div class="actions"><button class="btn btn-ghost" onclick="personModal('fornecedor','${x.id}')">Editar</button><button class="btn btn-danger" onclick="deletePerson('fornecedor','${x.id}')">Excluir</button></div></td></tr>`).join(''):`<tr><td colspan="5" class="empty">Nenhum fornecedor cadastrado.</td></tr>`;
+}
+function deletePerson(type,id){if(!confirm('Excluir cadastro?'))return;const key=type==='cliente'?'clientes':'fornecedores';db[key]=db[key].filter(x=>x.id!==id);saveDB();renderAll();toast('Cadastro excluído.')}
+
+/* =========================================================
+   CONTAS A PAGAR / RECEBER
+========================================================= */
+function statusPagar(x){if(x.status==='Pago')return 'Pago';return x.vencimento<today()?'Atrasado':'Pendente'}
+function statusReceber(x){if(x.status==='Recebido')return 'Recebido';return x.vencimento<today()?'Atrasado':'Pendente'}
+function accountModal(type,id=null){
+ const isP=type==='pagar', arr=isP?db.pagar:db.receber, old=arr.find(x=>x.id===id);
+ document.getElementById('genericTitle').textContent=id?(isP?'Editar conta a pagar':'Editar conta a receber'):(isP?'Nova conta a pagar':'Nova conta a receber');
+ const people=isP?db.fornecedores:db.clientes;
+ document.getElementById('genericBody').innerHTML=`<form id="accountForm"><div class="form-grid">
+ <div class="field full"><label>${isP?'Fornecedor':'Cliente'} *</label><select id="aPessoa" required><option value="">Selecione</option>${people.map(p=>`<option value="${p.id}" ${old?.pessoa===p.id?'selected':''}>${esc(p.nome)}</option>`).join('')}</select></div>
+ <div class="field full"><label>Descrição *</label><input id="aDesc" required value="${esc(old?.descricao||'')}"></div>
+ <div class="field"><label>Valor *</label><input id="aValor" type="number" min="0.01" step="0.01" required value="${old?.valor||''}"></div>
+ <div class="field"><label>Vencimento *</label><input id="aData" type="date" required value="${old?.vencimento||today()}"></div>
+ ${isP?`<div class="field"><label>Categoria</label><select id="aCat">${db.categorias.map(c=>`<option ${old?.categoria===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>`:''}
+ <div class="field"><label>Status</label><select id="aStatus">${(isP?['Pendente','Pago']:['Pendente','Recebido']).map(s=>`<option ${old?.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+ </div><div class="actions" style="margin-top:16px"><button class="btn btn-primary">Salvar</button><button type="button" class="btn btn-ghost" data-close="modalGeneric">Cancelar</button></div></form>`;
+ openModal('modalGeneric');
+ document.getElementById('accountForm').onsubmit=e=>{
+  e.preventDefault();
+  const obj={id:id||uid(isP?'pay':'rec'),pessoa:document.getElementById('aPessoa').value,descricao:document.getElementById('aDesc').value.trim(),valor:Number(document.getElementById('aValor').value),vencimento:document.getElementById('aData').value,status:document.getElementById('aStatus').value};
+  if(isP)obj.categoria=document.getElementById('aCat').value;
+  if(!obj.pessoa||!obj.descricao||!obj.valor||!obj.vencimento)return;
+  if(id){arr[arr.findIndex(x=>x.id===id)]=obj}else arr.push(obj);
+  saveDB();closeModal('modalGeneric');renderAll();toast('Conta salva com sucesso!');
+ };
+}
+document.getElementById('newPagar').onclick=()=>accountModal('pagar');
+document.getElementById('newReceber').onclick=()=>accountModal('receber');
+function renderAccounts(){
+ const f=(id)=>db.fornecedores.find(x=>x.id===id)?.nome||'—',c=(id)=>db.clientes.find(x=>x.id===id)?.nome||'—';
+ document.getElementById('pagarTable').innerHTML=db.pagar.length?db.pagar.sort((a,b)=>a.vencimento.localeCompare(b.vencimento)).map(x=>{let s=statusPagar(x);return `<tr><td>${dateBR(x.vencimento)}</td><td>${esc(x.descricao)}</td><td>${esc(f(x.pessoa))}</td><td>${esc(x.categoria||'-')}</td><td>${money(x.valor)}</td><td><span class="badge ${s==='Pago'?'green':s==='Atrasado'?'red':'orange'}">${s}</span></td><td><div class="actions"><button class="btn btn-ghost" onclick="accountModal('pagar','${x.id}')">Editar</button><button class="btn btn-danger" onclick="deleteAccount('pagar','${x.id}')">Excluir</button></div></td></tr>`}).join(''):`<tr><td colspan="7" class="empty">Nenhuma conta a pagar.</td></tr>`;
+ document.getElementById('receberTable').innerHTML=db.receber.length?db.receber.sort((a,b)=>a.vencimento.localeCompare(b.vencimento)).map(x=>{let s=statusReceber(x);return `<tr><td>${dateBR(x.vencimento)}</td><td>${esc(c(x.pessoa))}</td><td>${esc(x.descricao)}</td><td>${money(x.valor)}</td><td><span class="badge ${s==='Recebido'?'green':s==='Atrasado'?'red':'orange'}">${s}</span></td><td><div class="actions"><button class="btn btn-ghost" onclick="accountModal('receber','${x.id}')">Editar</button><button class="btn btn-danger" onclick="deleteAccount('receber','${x.id}')">Excluir</button></div></td></tr>`}).join(''):`<tr><td colspan="6" class="empty">Nenhuma conta a receber.</td></tr>`;
+}
+function deleteAccount(type,id){if(!confirm('Excluir esta conta?'))return;db[type]=db[type].filter(x=>x.id!==id);saveDB();renderAll();toast('Conta excluída.')}
+
+/* =========================================================
+   RELATÓRIOS E CSV
+========================================================= */
+function getReportList(){
+ let list=[...db.lancamentos];
+ const ini=document.getElementById('relInicio').value,fim=document.getElementById('relFim').value;
+ if(ini)list=list.filter(x=>x.data>=ini);if(fim)list=list.filter(x=>x.data<=fim);
+ return list.sort((a,b)=>b.data.localeCompare(a.data));
+}
+function renderReports(){
+ const list=getReportList(),r=list.filter(x=>x.tipo==='Receita').reduce((s,x)=>s+x.valor,0),d=list.filter(x=>x.tipo==='Despesa').reduce((s,x)=>s+x.valor,0);
+ document.getElementById('reportSummary').innerHTML=`<div class="three grid"><div class="card" style="box-shadow:none;background:#f0fdf4"><small>Receitas</small><h2 style="color:#16a34a">${money(r)}</h2></div><div class="card" style="box-shadow:none;background:#fef2f2"><small>Despesas</small><h2 style="color:#dc2626">${money(d)}</h2></div><div class="card" style="box-shadow:none;background:#eff6ff"><small>Saldo</small><h2>${money(r-d)}</h2></div></div>`;
+ const cats={};list.filter(x=>x.tipo==='Despesa').forEach(x=>cats[x.categoria]=(cats[x.categoria]||0)+x.valor);
+ const total=d||1;
+ document.getElementById('categoryReport').innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div style="margin:10px 0"><div style="display:flex;justify-content:space-between;font-size:12px"><b>${esc(k)}</b><span>${money(v)}</span></div><div class="bar"><i style="display:block;width:${v/total*100}%;height:100%;background:#2563eb"></i></div></div>`).join('')||'<div class="empty">Sem dados no período.</div>';
+ document.getElementById('reportTable').innerHTML=list.length?list.map(x=>`<tr><td>${dateBR(x.data)}</td><td>${esc(x.descricao)}</td><td>${esc(x.categoria)}</td><td><span class="badge ${x.tipo==='Receita'?'green':'red'}">${x.tipo}</span></td><td>${esc(x.status)}</td><td>${money(x.valor)}</td></tr>`).join(''):`<tr><td colspan="6" class="empty">Nenhuma movimentação no período.</td></tr>`;
+}
+['relInicio','relFim'].forEach(id=>document.getElementById(id).addEventListener('input',renderReports));
+function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"'}
+document.getElementById('exportCsv').onclick=()=>{
+ const list=getReportList();if(!list.length){toast('Não há dados para exportar.');return}
+ const rows=[['Data','Descrição','Categoria','Tipo','Status','Valor']];
+ list.forEach(x=>rows.push([dateBR(x.data),x.descricao,x.categoria,x.tipo,x.status,x.valor.toFixed(2).replace('.',',')]));
+ const csv='\uFEFF'+rows.map(r=>r.map(csvCell).join(';')).join('\r\n');
+ downloadBlob(csv,'relatorio-mei.csv','text/csv;charset=utf-8');
+ toast('Relatório CSV exportado!');
+};
+function downloadBlob(content,name,type){const blob=new Blob([content],{type});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href)}
+
+/* =========================================================
+   CONFIGURAÇÕES E BACKUP
+========================================================= */
+function renderConfig(){document.getElementById('cfgNegocio').value=db.config.negocio||'';document.getElementById('cfgResponsavel').value=db.config.responsavel||''}
+document.getElementById('saveConfig').onclick=()=>{db.config.negocio=document.getElementById('cfgNegocio').value.trim()||'MEI Gestor';db.config.responsavel=document.getElementById('cfgResponsavel').value.trim();saveDB();updateBrand();toast('Configurações salvas!')}
+function updateBrand(){document.getElementById('businessSubtitle').textContent=(db.config.negocio||'MEI Gestor')+' — '+(titles[document.querySelector('.nav button.active')?.dataset.page||'dashboard']?.[1]||'')}
+document.getElementById('exportBackup').onclick=()=>downloadBlob(JSON.stringify(db,null,2),'backup-mei-gestor.json','application/json');
+document.getElementById('importBackup').onchange=e=>{
+ const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.lancamentos||!x.clientes)throw 0;db={...defaultData,...x};saveDB();renderAll();toast('Backup restaurado!')}catch{toast('Arquivo de backup inválido.')}};r.readAsText(file)
+};
+document.getElementById('clearData').onclick=()=>{if(!confirm('Isso apagará todos os dados do sistema. Continuar?'))return;db=structuredClone(defaultData);saveDB();renderAll();toast('Todos os dados foram apagados.')};
+
+/* =========================================================
+   MODAIS
+========================================================= */
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.close)));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show')}));
+
+/* =========================================================
+   RENDERIZAÇÃO GERAL
+========================================================= */
+function renderAll(){
+ fillCategories();fillPessoa();renderDashboard();renderLancamentos();renderPeople();renderAccounts();renderReports();renderConfig();updateBrand();
+}
+renderAll();
+</script>
+</body>
+</html>
